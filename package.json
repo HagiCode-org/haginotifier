@@ -1,0 +1,17 @@
+{
+  "name": "haginotifier",
+  "version": "1.0.0",
+  "description": "Reusable GitHub Actions workflow for sending notifications to Feishu",
+  "type": "module",
+  "keywords": [
+    "github-actions",
+    "feishu",
+    "notification",
+    "webhook"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

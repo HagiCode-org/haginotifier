@@ -1,0 +1,51 @@
+name: Test Notification
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: "Test message content"
+        required: true
+        type: string
+        default: "Hello from haginotifier!"
+      msg_type:
+        description: "Message type (text, post, or interactive)"
+        required: false
+        type: choice
+        options:
+          - text
+          - post
+          - interactive
+        default: text
+      title:
+        description: "Message title (for post/interactive)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  test-notify:
+    name: Test Notification
+    uses: ./.github/workflows/notify.yml
+    with:
+      message: ${{ inputs.message }}
+      msg_type: ${{ inputs.msg_type }}
+      title: ${{ inputs.title }}
+    secrets:
+      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+
+  show-result:
+    name: Show Result
+    needs: test-notify
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Display notification result
+        run: |
+          echo "### Notification Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ needs.test-notify.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp**: ${{ needs.test-notify.outputs.timestamp }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Response**: ${{ needs.test-notify.outputs.response }}" >> $GITHUB_STEP_SUMMARY

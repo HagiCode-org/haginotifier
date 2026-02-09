@@ -1,0 +1,73 @@
+name: Send Feishu Notification
+
+on:
+  workflow_call:
+    inputs:
+      message:
+        description: "Notification message content"
+        required: true
+        type: string
+      msg_type:
+        description: "Message type (text, post, or interactive)"
+        required: false
+        type: string
+        default: "text"
+      title:
+        description: "Message title for post/interactive messages"
+        required: false
+        type: string
+    outputs:
+      status:
+        description: "Notification delivery status (success/failure)"
+        value: ${{ jobs.notify.outputs.status }}
+      timestamp:
+        description: "ISO 8601 timestamp of notification send attempt"
+        value: ${{ jobs.notify.outputs.timestamp }}
+      response:
+        description: "Webhook response content or error message"
+        value: ${{ jobs.notify.outputs.response }}
+    secrets:
+      FEISHU_WEBHOOK_URL:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.result.outputs.status }}
+      timestamp: ${{ steps.result.outputs.timestamp }}
+      response: ${{ steps.result.outputs.response }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install tsx
+        run: npm install -g tsx
+
+      - name: Send notification
+        id: notification
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_MESSAGE: ${{ inputs.message }}
+          FEISHU_MSG_TYPE: ${{ inputs.msg_type }}
+          FEISHU_TITLE: ${{ inputs.title }}
+        run: tsx src/feishu.ts > output.json
+
+      - name: Set outputs
+        id: result
+        run: |
+          STATUS=$(node -e "console.log(JSON.parse(require('fs').readFileSync('output.json')).status)")
+          TIMESTAMP=$(node -e "console.log(JSON.parse(require('fs').readFileSync('output.json')).timestamp)")
+          RESPONSE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('output.json')).response)")
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "response=$RESPONSE" >> $GITHUB_OUTPUT
