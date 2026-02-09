@@ -50,10 +50,27 @@ runs:
         HAGI_ACTION_MODE: "true"
       run: |
         cd ${{ github.action_path }}
+        set +e
         OUTPUT=$(npx tsx src/feishu.ts)
-        STATUS=$(echo "$OUTPUT" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
-        TIMESTAMP=$(echo "$OUTPUT" | grep -o '"timestamp":"[^"]*"' | cut -d'"' -f4)
-        RESPONSE=$(echo "$OUTPUT" | grep -o '"response":"[^"]*"' | cut -d'"' -f4 | sed 's/\\"/"/g')
+        EXIT_CODE=$?
+
+        if [ $EXIT_CODE -ne 0 ] || [ -z "$OUTPUT" ]; then
+          STATUS="failure"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          RESPONSE="CLI execution failed with exit code $EXIT_CODE or no output"
+        else
+          if command -v jq &> /dev/null; then
+            STATUS=$(echo "$OUTPUT" | jq -r '.status // "failure"')
+            TIMESTAMP=$(echo "$OUTPUT" | jq -r '.timestamp // empty')
+            RESPONSE=$(echo "$OUTPUT" | jq -r '.response // "No response"')
+          else
+            STATUS=$(node -e "try { const d = JSON.parse(require('fs').readFileSync(0, 'utf8')); console.log(d.status || 'failure'); } catch(e) { console.log('failure'); }" <<< "$OUTPUT")
+            TIMESTAMP=$(node -e "try { const d = JSON.parse(require('fs').readFileSync(0, 'utf8')); console.log(d.timestamp || ''); } catch(e) {}" <<< "$OUTPUT")
+            RESPONSE=$(node -e "try { const d = JSON.parse(require('fs').readFileSync(0, 'utf8')); console.log(d.response || 'No response'); } catch(e) { console.log('Parse error'); }" <<< "$OUTPUT")
+          fi
+        fi
+
+        [ -z "$TIMESTAMP" ] && TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         echo "status=$STATUS" >> $GITHUB_OUTPUT
         echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
         echo "response=$RESPONSE" >> $GITHUB_OUTPUT
