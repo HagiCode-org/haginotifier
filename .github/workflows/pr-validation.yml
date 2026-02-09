@@ -1,0 +1,80 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Test action execution
+        run: |
+          # Test with missing webhook (should return failure but not crash)
+          FEISHU_MESSAGE="Test message" HAGI_ACTION_MODE="true" npx tsx src/feishu.ts
+
+      - name: Verify package.json
+        run: |
+          # Verify tsx is in dependencies
+          if ! grep -q '"tsx"' package.json; then
+            echo "Error: tsx not found in package.json dependencies"
+            exit 1
+          fi
+
+          # Verify build script exists
+          if ! grep -q '"build"' package.json; then
+            echo "Error: build script not found in package.json"
+            exit 1
+          fi
+
+      - name: Verify action.yml
+        run: |
+          # Verify action.yml exists
+          if [ ! -f "action.yml" ]; then
+            echo "Error: action.yml not found"
+            exit 1
+          fi
+
+          # Verify tsx is used in action.yml
+          if ! grep -q 'npx tsx src/feishu.ts' action.yml; then
+            echo "Error: action.yml doesn't use tsx for execution"
+            exit 1
+          fi
+
+      - name: Verify source files
+        run: |
+          # Verify required source files exist
+          if [ ! -f "src/feishu.ts" ]; then
+            echo "Error: src/feishu.ts not found"
+            exit 1
+          fi
+
+          if [ ! -f "src/types.ts" ]; then
+            echo "Error: src/types.ts not found"
+            exit 1
+          fi
+
+          if [ ! -f "src/index.ts" ]; then
+            echo "Error: src/index.ts not found"
+            exit 1
+          fi
+
+      - name: Check TypeScript compilation
+        run: |
+          # Ensure no TypeScript errors
+          npx tsc --noEmit
