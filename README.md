@@ -21,7 +21,7 @@ Send a simple text message:
 ```yaml
 jobs:
   notify:
-    uses: newbe36524/haginotifier/.github/workflows/notify.yml@main
+    uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@main
     with:
       message: 'Deployment successful!'
     secrets:
@@ -35,7 +35,7 @@ Send a rich text message with a title:
 ```yaml
 jobs:
   notify:
-    uses: newbe36524/haginotifier/.github/workflows/notify.yml@main
+    uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@main
     with:
       message: 'The production deployment has been completed successfully.'
       msg_type: 'post'
@@ -51,7 +51,7 @@ Send an interactive card message:
 ```yaml
 jobs:
   notify:
-    uses: newbe36524/haginotifier/.github/workflows/notify.yml@main
+    uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@main
     with:
       message: 'Build #123 completed in 5 minutes'
       msg_type: 'interactive'
@@ -67,7 +67,7 @@ Access the notification result in subsequent steps:
 ```yaml
 jobs:
   notify:
-    uses: newbe36524/haginotifier/.github/workflows/notify.yml@main
+    uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@main
     with:
       message: 'Test notification'
     secrets:
@@ -122,7 +122,7 @@ Configure the webhook URL once in the haginotifier repository, and all consuming
 ```yaml
 jobs:
   notify:
-    uses: newbe36524/haginotifier/.github/workflows/notify.yml@main
+    uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@main
     with:
       message: 'Your notification here'
     secrets:
@@ -149,7 +149,7 @@ Each repository manages its own webhook URL.
 For production use, pin to a specific version tag instead of `main`:
 
 ```yaml
-uses: newbe36524/haginotifier/.github/workflows/notify.yml@v1.0.0
+uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@v1.0.0
 ```
 
 ## Development
