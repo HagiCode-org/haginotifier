@@ -28,24 +28,22 @@ permissions:
 jobs:
   test-notify:
     name: Test Notification
-    uses: ./.github/workflows/notify.yml
-    with:
-      message: ${{ inputs.message }}
-      msg_type: ${{ inputs.msg_type }}
-      title: ${{ inputs.title }}
-    secrets:
-      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
-
-  show-result:
-    name: Show Result
-    needs: test-notify
     runs-on: ubuntu-latest
-    if: always()
     steps:
+      - id: notification
+        uses: ./ # Uses action.yml from the current repository
+        with:
+          message: ${{ inputs.message }}
+          msg_type: ${{ inputs.msg_type }}
+          title: ${{ inputs.title }}
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+
       - name: Display notification result
+        if: always()
         run: |
           echo "### Notification Result" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: ${{ needs.test-notify.outputs.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Timestamp**: ${{ needs.test-notify.outputs.timestamp }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Response**: ${{ needs.test-notify.outputs.response }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ steps.notification.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp**: ${{ steps.notification.outputs.timestamp }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Response**: ${{ steps.notification.outputs.response }}" >> $GITHUB_STEP_SUMMARY

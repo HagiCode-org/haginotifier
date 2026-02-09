@@ -1,16 +1,16 @@
 # haginotifier
 
-> Reusable GitHub Actions workflow for sending notifications to Feishu (飞书)
+> GitHub Action for sending notifications to Feishu (飞书)
 
-A simple, reusable GitHub Actions workflow that allows any repository to send notifications to Feishu via webhook. This provides a unified notification mechanism across your organization, eliminating the need to duplicate notification logic in each repository.
+A simple GitHub Action that allows any repository to send notifications to Feishu via webhook. This provides a unified notification mechanism across your organization, eliminating the need to duplicate notification logic in each repository.
 
 ## Features
 
-- **Reusable Workflow**: Call from any repository using standard `uses:` syntax
+- **GitHub Composite Action**: Use standard GitHub Actions syntax with version pinning
 - **Multiple Message Types**: Support for text, rich text (post), and interactive card messages
 - **Simple Configuration**: Just provide a webhook URL and message content
 - **Standardized Output**: Returns status, timestamp, and response data for downstream processing
-- **ESM Module**: Built with modern TypeScript and ESM for Node.js 18+
+- **Fast Execution**: Pre-compiled JavaScript with no runtime TypeScript compilation overhead
 
 ## Usage
 
@@ -21,11 +21,13 @@ Send a simple text message:
 ```yaml
 jobs:
   notify:
-    uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@main
-    with:
-      message: 'Deployment successful!'
-    secrets:
-      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: HagiCode-org/haginotifier@v1
+        with:
+          message: 'Deployment successful!'
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
 ```
 
 ### Rich Text Message
@@ -35,13 +37,15 @@ Send a rich text message with a title:
 ```yaml
 jobs:
   notify:
-    uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@main
-    with:
-      message: 'The production deployment has been completed successfully.'
-      msg_type: 'post'
-      title: 'Deployment Notification'
-    secrets:
-      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: HagiCode-org/haginotifier@v1
+        with:
+          message: 'The production deployment has been completed successfully.'
+          msg_type: 'post'
+          title: 'Deployment Notification'
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
 ```
 
 ### Interactive Card Message
@@ -51,13 +55,15 @@ Send an interactive card message:
 ```yaml
 jobs:
   notify:
-    uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@main
-    with:
-      message: 'Build #123 completed in 5 minutes'
-      msg_type: 'interactive'
-      title: 'CI/CD Pipeline Status'
-    secrets:
-      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: HagiCode-org/haginotifier@v1
+        with:
+          message: 'Build #123 completed in 5 minutes'
+          msg_type: 'interactive'
+          title: 'CI/CD Pipeline Status'
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
 ```
 
 ### Using Outputs
@@ -67,20 +73,19 @@ Access the notification result in subsequent steps:
 ```yaml
 jobs:
   notify:
-    uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@main
-    with:
-      message: 'Test notification'
-    secrets:
-      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
-  check-result:
-    needs: notify
     runs-on: ubuntu-latest
     steps:
+      - id: notification
+        uses: HagiCode-org/haginotifier@v1
+        with:
+          message: 'Test notification'
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
       - name: Check notification status
         run: |
-          echo "Status: ${{ needs.notify.outputs.status }}"
-          echo "Timestamp: ${{ needs.notify.outputs.timestamp }}"
-          echo "Response: ${{ needs.notify.outputs.response }}"
+          echo "Status: ${{ steps.notification.outputs.status }}"
+          echo "Timestamp: ${{ steps.notification.outputs.timestamp }}"
+          echo "Response: ${{ steps.notification.outputs.response }}"
 ```
 
 ## Input Parameters
@@ -91,10 +96,10 @@ jobs:
 | `msg_type` | No | string | Message type: `text`, `post`, or `interactive` | `text` |
 | `title` | No | string | Message title for post/interactive messages | - |
 
-## Secrets
+## Environment Variables
 
-| Secret | Required | Description |
-|--------|----------|-------------|
+| Variable | Required | Description |
+|----------|----------|-------------|
 | `FEISHU_WEBHOOK_URL` | Yes | Feishu Webhook URL for sending notifications |
 
 ## Output Parameters
@@ -131,11 +136,13 @@ Configure the webhook URL once at the organization level, and all repositories w
 ```yaml
 jobs:
   notify:
-    uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@main
-    with:
-      message: 'Your notification here'
-    secrets:
-      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: HagiCode-org/haginotifier@v1
+        with:
+          message: 'Your notification here'
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
 ```
 
 **Benefits of Organization-level Secrets:**
@@ -161,7 +168,70 @@ Each repository manages its own webhook URL. This is suitable for:
 3. Select "Custom Bot" and configure it
 4. Copy the Webhook URL
 
+### Versioning
+
+For production use, pin to a specific version tag instead of using `@v1`:
+
+```yaml
+# Pin to major version (gets updates)
+- uses: HagiCode-org/haginotifier@v1
+
+# Pin to specific version (most stable)
+- uses: HagiCode-org/haginotifier@v1.0.0
+
+# Use latest (not recommended for production)
+- uses: HagiCode-org/haginotifier@main
+```
+
 ## Migration Guide
+
+### Migrating from Reusable Workflow (Breaking Change)
+
+This action has been converted from a reusable workflow to a composite action. If you were using the old reusable workflow syntax, you need to update your workflow files.
+
+**Old syntax (Reusable Workflow):**
+
+```yaml
+jobs:
+  notify:
+    uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@main
+    with:
+      message: 'Deployment successful!'
+    secrets:
+      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+
+  check-result:
+    needs: notify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check status
+        run: echo "Status: ${{ needs.notify.outputs.status }}"
+```
+
+**New syntax (Composite Action):**
+
+```yaml
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - id: notification
+        uses: HagiCode-org/haginotifier@v1
+        with:
+          message: 'Deployment successful!'
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+
+      - name: Check status
+        run: echo "Status: ${{ steps.notification.outputs.status }}"
+```
+
+**Key Changes:**
+1. Add `runs-on: ubuntu-latest` to the job
+2. Add `steps:` array
+3. Move `secrets:` to `env:` under the step
+4. Use `steps.<step-id>.outputs.<output-name>` instead of `needs.<job-id>.outputs.<output-name>`
+5. Use `@v1` version tag instead of `@main` branch
 
 ### Migrating from Per-Repository to Organization-level Secret
 
@@ -187,20 +257,12 @@ If you encounter any issues, you can easily rollback:
 1. Re-create the `FEISHU_WEBHOOK_URL` secret in individual repositories
 2. No changes to workflow files are needed
 
-### 3. Reference a Specific Version
-
-For production use, pin to a specific version tag instead of `main`:
-
-```yaml
-uses: HagiCode-org/haginotifier/.github/workflows/notify.yml@v1.0.0
-```
-
 ## Development
 
 ### Prerequisites
 
-- Node.js 18 or higher
-- tsx (TypeScript executor)
+- Node.js 20 or higher
+- TypeScript 5+
 
 ### Local Testing
 
@@ -218,12 +280,12 @@ FEISHU_WEBHOOK_URL="your_webhook_url" FEISHU_MESSAGE="Test message" npx tsx src/
 haginotifier/
 ├── .github/
 │   └── workflows/
-│       ├── notify.yml         # Reusable workflow definition
 │       └── test-notify.yml    # Manual test workflow
 ├── src/
 │   ├── feishu.ts              # Feishu Webhook implementation
 │   ├── types.ts               # TypeScript type definitions
-│   └── index.ts               # Main entry point
+│   └── index.ts               # Main module exports
+├── action.yml                 # Composite action definition
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -231,7 +293,7 @@ haginotifier/
 
 ### Testing
 
-You can test the notification workflow directly from GitHub:
+You can test the notification action directly from GitHub:
 
 1. Go to Actions tab in the haginotifier repository
 2. Select "Test Notification" workflow
@@ -252,7 +314,7 @@ The codebase is designed to be easily extended with additional notification prov
 2. Implement a similar `sendNotification` function
 3. Add provider-specific types to `src/types.ts`
 4. Export from `src/index.ts`
-5. Update the workflow to accept a `provider` input parameter
+5. Update `action.yml` to accept a `provider` input parameter
 
 ## License
 
@@ -283,6 +345,10 @@ A: Yes, you can use both approaches simultaneously. Some repositories can use th
 **Q: How do I update the webhook URL for all repositories?**
 
 A: With organization-level secrets, simply update the secret value in the organization settings. All repositories with access will automatically use the new value.
+
+**Q: What's the difference between the old reusable workflow and the new action?**
+
+A: The new action is faster (no runtime TypeScript compilation), uses standard GitHub Actions versioning (`@v1`), and follows ecosystem best practices. The old workflow syntax is deprecated and will be removed in a future release.
 
 ## Troubleshooting
 

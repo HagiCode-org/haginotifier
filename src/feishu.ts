@@ -173,12 +173,14 @@ export async function sendNotification(
  * - FEISHU_MESSAGE: The message content
  * - FEISHU_MSG_TYPE: Optional message type (default: text)
  * - FEISHU_TITLE: Optional title for post/interactive messages
+ * - HAGI_ACTION_MODE: Set to "true" when running as GitHub Action (never exits with error)
  */
 export async function runCli(): Promise<void> {
   const webhook_url = process.env.FEISHU_WEBHOOK_URL || "";
   const message = process.env.FEISHU_MESSAGE || "";
   const msg_type = (process.env.FEISHU_MSG_TYPE as "text" | "post" | "interactive") || "text";
   const title = process.env.FEISHU_TITLE;
+  const isActionMode = process.env.HAGI_ACTION_MODE === "true";
 
   const result = await sendNotification({
     webhook_url,
@@ -189,7 +191,8 @@ export async function runCli(): Promise<void> {
 
   console.log(JSON.stringify(result, null, 2));
 
-  if (result.status === "failure") {
+  // Only exit with error code if NOT in action mode
+  if (!isActionMode && result.status === "failure") {
     process.exit(1);
   }
 }
